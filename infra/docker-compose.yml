@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   db:
-    image: postgres:13
+    image: postgres:17
     container_name: foodgram-db
     environment:
       POSTGRES_DB: ${DB_NAME}
@@ -10,13 +10,42 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    env_file:
+      - .env
+    networks:
+      - app-network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
-  backend:
-    build: ./backend
-    container_name: foodgram-backend
+  frontend:
+    build: ../frontend
+    container_name: foodgram-frontend
+    ports:
+      - "80:80"
     volumes:
       - static_volume:/app/static
       - media_volume:/app/media
+    depends_on:
+      - backend
+    networks:
+      - app-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  backend:
+    build: ../backend
+    container_name: foodgram-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../backend:/app
+      - static_volume:/app/migrant_id_backend/static
+      - media_volume:/app/media
+    env_file:
+      - .env
     environment:
       DB_ENGINE: django.db.backends.postgresql
       DB_NAME: ${DB_NAME}
@@ -24,32 +53,24 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       DB_HOST: ${DB_HOST}
       DB_PORT: ${DB_PORT}
-      SECRET_KEY: ${DJANGO_SECRET_KEY}
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
+      DJANGO_DEBUG: ${DJANGO_DEBUG}
+      DJANGO_HOSTS: ${DJANGO_HOSTS}
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+    networks:
+      - app-network
+    command: >
+      sh -c "python manage.py collectstatic --noinput &&
+             python manage.py migrate &&
+             python manage.py runserver 0.0.0.0:8000"
 
-  frontend:
-    build: ./frontend
-    container_name: foodgram-frontend
-    volumes:
-      - frontend_static:/app/result_build
-
-  nginx:
-    image: nginx:1.25.4-alpine
-    container_name: foodgram-nginx
-    ports:
-      - "80:80"
-    volumes:
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf
-      - frontend_static:/usr/share/nginx/html:ro
-      - static_volume:/usr/share/nginx/html/static:ro
-      - media_volume:/usr/share/nginx/html/media:ro
-    depends_on:
-      - backend
-      - frontend
+networks:
+  app-network:
+    driver: bridge
 
 volumes:
   postgres_data:
-  frontend_static:
   static_volume:
   media_volume:

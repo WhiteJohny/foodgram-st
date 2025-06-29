@@ -1,12 +1,33 @@
+# Базовый образ
 FROM python:3.11-slim
 
+# Установка системных зависимостей
+RUN apt-get update && apt-get install -y \
+    netcat-traditional \
+    && rm -rf /var/lib/apt/lists/*
+
+# Установка рабочей директории
 WORKDIR /app
 
+# Копирование зависимостей
 COPY requirements.txt .
-RUN pip install -r requirements.txt --no-cache-dir
 
+# Установка Python зависимостей
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Копирование проекта
 COPY . .
 
-RUN python manage.py collectstatic --noinput
+# Создание директорий для статических и медиа файлов
+RUN mkdir -p /app/static /app/media
 
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "foodgram.wsgi:application"]
+# Копирование entrypoint скрипта
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+# Установка переменных окружения
+ENV PYTHONUNBUFFERED=1
+ENV DJANGO_SETTINGS_MODULE=foodgram.settings
+
+# Запуск entrypoint скрипта
+ENTRYPOINT ["/entrypoint.sh"]
