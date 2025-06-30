@@ -1,6 +1,7 @@
 import pytest
 
 from rest_framework import status
+from rest_framework.test import APIClient
 
 from users.models import User
 from recipes.models import (
@@ -10,6 +11,11 @@ from recipes.models import (
     Favorite,
     ShoppingCart
 )
+
+
+@pytest.fixture
+def client():
+    return APIClient()
 
 
 @pytest.mark.django_db

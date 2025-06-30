@@ -1,8 +1,14 @@
 import pytest
 
 from rest_framework import status
+from rest_framework.test import APIClient
 
 from recipes.models import Ingredient
+
+
+@pytest.fixture
+def client():
+    return APIClient()
 
 
 @pytest.mark.django_db
