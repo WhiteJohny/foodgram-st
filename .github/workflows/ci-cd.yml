@@ -85,7 +85,6 @@ jobs:
         push: true
         tags: |
           ${{ env.DOCKERHUB_USERNAME }}/${{ env.BACKEND_IMAGE }}:latest
-          ${{ env.DOCKERHUB_USERNAME }}/${{ env.BACKEND_IMAGE }}:${{ github.sha }}
 
     - name: Build and push frontend image
       uses: docker/build-push-action@v5
@@ -95,7 +94,6 @@ jobs:
         push: true
         tags: |
           ${{ env.DOCKERHUB_USERNAME }}/${{ env.FRONTEND_IMAGE }}:latest
-          ${{ env.DOCKERHUB_USERNAME }}/${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
 
     - name: Build and push nginx image
       uses: docker/build-push-action@v5
@@ -105,4 +103,3 @@ jobs:
         push: true
         tags: |
           ${{ env.DOCKERHUB_USERNAME }}/${{ env.NGINX_IMAGE }}:latest
-          ${{ env.DOCKERHUB_USERNAME }}/${{ env.NGINX_IMAGE }}:${{ github.sha }}
