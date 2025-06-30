@@ -20,29 +20,13 @@ services:
       timeout: 5s
       retries: 5
 
-  frontend:
-    build: ../frontend
-    container_name: foodgram-frontend
-    ports:
-      - "80:80"
-    volumes:
-      - static_volume:/app/static
-      - media_volume:/app/media
-    depends_on:
-      - backend
-    networks:
-      - app-network
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-
   backend:
-    build: ../backend
+    build: ./backend
     container_name: foodgram-backend
-    ports:
-      - "8000:8000"
     volumes:
-      - ../backend:/app
-      - static_volume:/app/migrant_id_backend/static
+      - ./backend:/app
+      - ./data:/app/data
+      - static_volume:/app/static
       - media_volume:/app/media
     env_file:
       - .env
@@ -51,20 +35,40 @@ services:
       DB_NAME: ${DB_NAME}
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
-      DB_HOST: ${DB_HOST}
+      DB_HOST: db
       DB_PORT: ${DB_PORT}
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
       DJANGO_DEBUG: ${DJANGO_DEBUG}
-      DJANGO_HOSTS: ${DJANGO_HOSTS}
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS}
     depends_on:
       db:
         condition: service_healthy
     networks:
       - app-network
-    command: >
-      sh -c "python manage.py collectstatic --noinput &&
-             python manage.py migrate &&
-             python manage.py runserver 0.0.0.0:8000"
+
+  frontend:
+    build: ./frontend
+    container_name: foodgram-frontend
+    volumes:
+      - frontend_static:/app/build
+    networks:
+      - app-network
+    command: sh -c "npm run build"
+
+  nginx:
+    build: ./nginx
+    container_name: foodgram-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - frontend_static:/usr/share/nginx/html
+      - static_volume:/app/static
+      - media_volume:/app/media
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - app-network
 
 networks:
   app-network:
@@ -72,5 +76,6 @@ networks:
 
 volumes:
   postgres_data:
+  frontend_static:
   static_volume:
   media_volume:

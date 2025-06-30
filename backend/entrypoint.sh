@@ -21,6 +21,12 @@ collect_static() {
     python manage.py collectstatic --noinput
 }
 
+load_ingredients() {
+    echo "Loading ingredients..."
+    python manage.py load_ingredients
+    echo "Ingredients loaded "
+}
+
 # Функция для создания суперпользователя, если его нет
 create_superuser() {
     if [ -n "$DJANGO_SUPERUSER_EMAIL" ] && [ -n "$DJANGO_SUPERUSER_PASSWORD" ]; then
@@ -29,9 +35,7 @@ create_superuser() {
             --email $DJANGO_SUPERUSER_EMAIL \
             --username $DJANGO_SUPERUSER_USERNAME \
             --first_name $DJANGO_SUPERUSER_FIRST_NAME \
-            --last_name $DJANGO_SUPERUSER_LAST_NAME \
-            --password $DJANGO_SUPERUSER_PASSWORD \
-            --password_repeat $DJANGO_SUPERUSER_PASSWORD
+            --last_name $DJANGO_SUPERUSER_LAST_NAME
     fi
 }
 
@@ -39,11 +43,12 @@ create_superuser() {
 wait_for_postgres
 apply_migrations
 collect_static
+load_ingredients
 create_superuser
 
 # Запуск Gunicorn
 echo "Starting Gunicorn..."
-exec gunicorn migrant_id_backend.wsgi:application --bind 0.0.0.0:8000 \
+exec gunicorn foodgram.wsgi:application --bind 0.0.0.0:8000 \
     --workers 3 \
     --timeout 120 \
     --access-logfile - \

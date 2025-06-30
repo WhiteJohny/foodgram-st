@@ -21,13 +21,11 @@ COPY . .
 # Создание директорий для статических и медиа файлов
 RUN mkdir -p /app/static /app/media
 
-# Копирование entrypoint скрипта
-COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
 
 # Установка переменных окружения
 ENV PYTHONUNBUFFERED=1
 ENV DJANGO_SETTINGS_MODULE=foodgram.settings
 
 # Запуск entrypoint скрипта
-ENTRYPOINT ["/entrypoint.sh"]
+ENTRYPOINT ["/app/entrypoint.sh"]
