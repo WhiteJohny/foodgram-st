@@ -11,6 +11,7 @@ env:
   BACKEND_IMAGE: foodgram-backend
   FRONTEND_IMAGE: foodgram-frontend
   NGINX_IMAGE: foodgram-nginx
+  DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,backend,host.docker.internal
 
 jobs:
   test-backend:
@@ -52,8 +53,13 @@ jobs:
         SECRET_KEY: test-key
         DEBUG: "False"
       run: |
+        cd backend/
         python manage.py migrate
         pytest
+
+    - name: Lint with flake8
+      run: |
+        flake8
 
   build-and-push:
     needs: test-backend
