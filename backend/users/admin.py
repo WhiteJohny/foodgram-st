@@ -72,5 +72,6 @@ class SubscriptionAdmin(admin.ModelAdmin):
         return super().get_queryset(request).select_related('user', 'author')
 
     def has_add_permission(self, request):
-        # Запретить добавление через админку, если подписки управляются через API
+        # Запретить добавление через админку,
+        # если подписки управляются через API
         return False

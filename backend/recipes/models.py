@@ -6,28 +6,15 @@ from users.models import User
 
 class Ingredient(models.Model):
     INGREDIENT_MAX_LENGTH = 100
-    MEASUREMENT_CHOICES = [
-        ('gram', 'грамм'),
-        ('kilogram', 'килограмм'),
-        ('milliliter', 'миллилитр'),
-        ('liter', 'литр'),
-        ('piece', 'штука'),
-    ]
 
     name = models.CharField(
         verbose_name='Название ингредиента',
         max_length=INGREDIENT_MAX_LENGTH,
         db_index=True
     )
-    measurement_value = models.FloatField(
-        verbose_name='Вес/Объем/Количество ингредиента',
-        blank=False
-    )
     measurement_unit = models.CharField(
         verbose_name='Единица измерения',
         max_length=INGREDIENT_MAX_LENGTH,
-        choices=MEASUREMENT_CHOICES,
-        default='gram'
     )
 
     class Meta:
@@ -99,11 +86,12 @@ class RecipeIngredient(models.Model):
     recipe = models.ForeignKey(
         to=Recipe,
         on_delete=models.CASCADE,
-        related_name='recipe_ingredients'
+        related_name='ingredient_amounts'
     )
     ingredient = models.ForeignKey(
         to=Ingredient,
-        on_delete=models.CASCADE
+        on_delete=models.CASCADE,
+        related_name='recipe_ingredients'
     )
     amount = models.PositiveSmallIntegerField(
         verbose_name='Количество',
@@ -158,7 +146,7 @@ class Favorite(models.Model):
         return f'{self.user} — {self.recipe}'
 
 
-class ShoppingList(models.Model):
+class ShoppingCart(models.Model):
     user = models.ForeignKey(
         to=User,
         on_delete=models.CASCADE,

@@ -3,7 +3,7 @@ from django.db.models import Count
 
 from .models import (
     Ingredient, Recipe, RecipeIngredient,
-    Favorite, ShoppingList
+    Favorite, ShoppingCart
 )
 
 
@@ -11,22 +11,21 @@ from .models import (
 class IngredientAdmin(admin.ModelAdmin):
     list_display = (
         'name',
-        'measurement_value',
         'measurement_unit',
         'recipe_count'
     )
     search_fields = ('name', )
     ordering = ('name', )
-    fields = ('name', 'measurement_value', 'measurement_unit')
+    fields = ('name', 'measurement_unit')
     search_help_text = 'Поиск по названию ингредиента'
 
     def get_queryset(self, request):
         return super().get_queryset(request).annotate(
-            recipe_count=Count('recipe_amounts')
+            recipe_count=Count('recipe_ingredients')
         )
 
     def recipe_count(self, obj):
-        return obj.recipe_count
+        return obj.recipe_ingredients.count()
 
     recipe_count.short_description = 'Используется в рецептах'
 
@@ -43,7 +42,7 @@ class RecipeIngredientInline(admin.TabularInline):
         formset = super().get_formset(request, obj, **kwargs)
 
         formset.form.base_fields['ingredient'].label_from_instance = (
-            lambda inst: f'{inst.name} ({inst.measurement_value}) ({inst.measurement_unit})'
+            lambda inst: f'{inst.name} ({inst.measurement_unit})'
         )
         return formset
 
@@ -97,7 +96,7 @@ class FavoriteAdmin(admin.ModelAdmin):
         )
 
 
-@admin.register(ShoppingList)
+@admin.register(ShoppingCart)
 class ShoppingCartAdmin(admin.ModelAdmin):
     list_display = ('user', 'recipe')
     autocomplete_fields = ('user', 'recipe')
