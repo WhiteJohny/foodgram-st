@@ -3,11 +3,8 @@ import pytest
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from recipes.models import (
-    Favorite,
-    ShoppingCart,
-    Recipe
-)
+from recipes.models import Recipe
+
 from users.models import User
 
 
@@ -19,14 +16,18 @@ def client():
 @pytest.mark.django_db
 def test_recipes_list(client):
     # Создаем пользователей и рецепты
-    user = User.objects.create_user(email='user@example.com', username='user', password='Qwerty123')
-    recipe1 = Recipe.objects.create(
+    user = User.objects.create_user(
+        email='user@example.com',
+        username='user',
+        password='Qwerty123'
+    )
+    Recipe.objects.create(
         author=user,
         name='Рецепт 1',
         text='Описание рецепта 1',
         cooking_time=30
     )
-    recipe2 = Recipe.objects.create(
+    Recipe.objects.create(
         author=user,
         name='Рецепт 2',
         text='Описание рецепта 2',
@@ -41,7 +42,7 @@ def test_recipes_list(client):
 @pytest.mark.django_db
 def test_recipe_create_with_invalid_data(client):
     # Создаем пользователя
-    user = User.objects.create_user(
+    User.objects.create_user(
         email='user@example.com',
         username='user',
         password='Qwerty123'

@@ -15,7 +15,7 @@ def client():
 @pytest.mark.django_db
 def test_user_subscriptions(client):
     # Создаем пользователей
-    user = User.objects.create_user(
+    User.objects.create_user(
         email='user@example.com',
         username='user',
         password='Qwerty123'

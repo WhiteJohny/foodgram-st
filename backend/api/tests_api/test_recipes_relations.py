@@ -6,8 +6,6 @@ from rest_framework.test import APIClient
 from users.models import User
 from recipes.models import (
     Recipe,
-    RecipeIngredient,
-    Ingredient,
     Favorite,
     ShoppingCart
 )

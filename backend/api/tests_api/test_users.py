@@ -107,7 +107,7 @@ def test_unsubscribe_from_author(client):
 @pytest.mark.django_db
 def test_user_avatar_upload(client):
     # Создаем пользователя
-    user = User.objects.create_user(
+    User.objects.create_user(
         email='user@example.com',
         username='user',
         password='Qwerty123'
@@ -138,7 +138,7 @@ def test_user_avatar_upload(client):
 @pytest.mark.django_db
 def test_user_avatar_delete(client):
     # Создаем пользователя
-    user = User.objects.create_user(
+    User.objects.create_user(
         email='user@example.com',
         username='user',
         password='Qwerty123'
