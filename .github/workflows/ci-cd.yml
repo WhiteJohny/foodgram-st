@@ -12,7 +12,6 @@ env:
   FRONTEND_IMAGE: foodgram-frontend
   NGINX_IMAGE: foodgram-nginx
   DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,backend,host.docker.internal
-  DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
 
 jobs:
   test-backend:
@@ -51,7 +50,7 @@ jobs:
       working-directory: ./backend
       env:
         DATABASE_URL: postgres://test_user:test_pass@postgres:5432/test_db
-        DJANGO_SECRET_KEY: ${{ DJANGO_SECRET_KEY }}
+        SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
         DEBUG: "False"
       run: |
         python manage.py migrate
