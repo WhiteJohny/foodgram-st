@@ -22,7 +22,6 @@ services:
 
   backend:
     build: ./backend
-    image: santino9/foodgram-backend:latest
     container_name: foodgram-backend
     volumes:
       - ./backend:/app
@@ -36,9 +35,9 @@ services:
       DB_NAME: ${DB_NAME}
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
-      DB_HOST: db
+      DB_HOST: ${DB_HOST}
       DB_PORT: ${DB_PORT}
-      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
+      SECRET_KEY: ${SECRET_KEY}
       DJANGO_DEBUG: ${DJANGO_DEBUG}
       DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS}
     depends_on:
@@ -49,7 +48,6 @@ services:
 
   frontend:
     build: ./frontend
-    image: santino9/foodgram-frontend:latest
     container_name: foodgram-frontend
     volumes:
       - frontend_static:/app/build
@@ -59,7 +57,6 @@ services:
 
   nginx:
     build: ./nginx
-    image: santino9/foodgram-nginx:latest
     container_name: foodgram-nginx
     ports:
       - "80:80"
