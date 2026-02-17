@@ -1,0 +1,58 @@
+# Количество реплик (для PostgreSQL обычно 1)
+replicaCount: 1
+
+# Настройки образа
+image:
+  repository: postgres
+  tag: "17"
+  pullPolicy: IfNotPresent
+
+# Параметры базы данных
+database:
+  name: foodgram
+  user: postgres
+  password: ""   # обязателен, должен быть переопределён при установке
+
+# Сервис
+service:
+  port: 5432
+  type: ClusterIP
+
+# Хранилище – используется volumeClaimTemplates (динамическое выделение)
+persistence:
+  enabled: true
+  size: 2Gi
+  storageClass: ""          # если не указан, используется default
+  accessMode: ReadWriteOnce
+
+# Ресурсы
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 250m
+    memory: 256Mi
+
+# Проверки готовности и живости
+livenessProbe:
+  enabled: true
+  initialDelaySeconds: 30
+  periodSeconds: 10
+
+readinessProbe:
+  enabled: true
+  initialDelaySeconds: 5
+  periodSeconds: 5
+
+  # Настройки подчарта PostgreSQL
+  postgresql:
+    enabled: true
+    database:
+      name: foodgram
+      user: postgres
+      password: ""   # обязательно переопределить при установке
+    persistence:
+      size: 2Gi
+      storageClass: "manual"   # если вы используете статический PV с таким классом
+    # остальные параметры можно переопределить по необходимости

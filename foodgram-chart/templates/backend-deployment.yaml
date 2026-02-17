@@ -1,0 +1,128 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "foodgram.fullname" . }}-backend
+  labels:
+    {{- include "foodgram.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backend
+spec:
+  replicas: {{ .Values.backend.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "foodgram.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: backend
+  template:
+    metadata:
+      labels:
+        {{- include "foodgram.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: backend
+    spec:
+      initContainers:
+      - name: wait-for-postgres
+        image: {{ .Values.postgresql.image.repository }}:{{ .Values.postgresql.image.tag }}
+        command:
+        - sh
+        - -c
+        - |
+          until pg_isready -h {{ .Values.backend.configMap.data.DB_HOST }} -p {{ .Values.backend.configMap.data.DB_PORT }} -U $(DB_USER) -d $(DB_NAME); do
+            echo "Waiting for PostgreSQL..."
+            sleep 2
+          done
+        env:
+        - name: DB_USER
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "foodgram.fullname" . }}-backend-config
+              key: DB_USER
+        - name: DB_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "foodgram.fullname" . }}-backend-config
+              key: DB_NAME
+        - name: PGPASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "foodgram.fullname" . }}-secret
+              key: DB_PASSWORD
+      containers:
+      - name: django
+        image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag | default .Chart.AppVersion }}"
+        imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.backend.service.port }}
+        env:
+        - name: DB_ENGINE
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "foodgram.fullname" . }}-backend-config
+              key: DB_ENGINE
+        - name: DB_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "foodgram.fullname" . }}-backend-config
+              key: DB_NAME
+        - name: DB_USER
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "foodgram.fullname" . }}-backend-config
+              key: DB_USER
+        - name: DB_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "foodgram.fullname" . }}-backend-config
+              key: DB_HOST
+        - name: DB_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "foodgram.fullname" . }}-backend-config
+              key: DB_PORT
+        - name: DJANGO_DEBUG
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "foodgram.fullname" . }}-backend-config
+              key: DJANGO_DEBUG
+        - name: DJANGO_ALLOWED_HOSTS
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "foodgram.fullname" . }}-backend-config
+              key: DJANGO_ALLOWED_HOSTS
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "foodgram.fullname" . }}-secret
+              key: DB_PASSWORD
+        - name: SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "foodgram.fullname" . }}-secret
+              key: SECRET_KEY
+        volumeMounts:
+        - name: static-volume
+          mountPath: /app/static
+        - name: media-volume
+          mountPath: /app/media
+#        {{- if .Values.backend.livenessProbe.enabled }}
+#        livenessProbe:
+#          httpGet:
+#            path: {{ .Values.backend.livenessProbe.path }}
+#            port: {{ .Values.backend.service.port }}
+#          initialDelaySeconds: {{ .Values.backend.livenessProbe.initialDelaySeconds }}
+#          periodSeconds: {{ .Values.backend.livenessProbe.periodSeconds }}
+#        {{- end }}
+#        {{- if .Values.backend.readinessProbe.enabled }}
+#        readinessProbe:
+#          httpGet:
+#            path: {{ .Values.backend.readinessProbe.path }}
+#            port: {{ .Values.backend.service.port }}
+#          initialDelaySeconds: {{ .Values.backend.readinessProbe.initialDelaySeconds }}
+#          periodSeconds: {{ .Values.backend.readinessProbe.periodSeconds }}
+#        {{- end }}
+        resources:
+          {{- toYaml .Values.backend.resources | nindent 10 }}
+      volumes:
+      - name: static-volume
+        persistentVolumeClaim:
+          claimName: {{ .Values.persistence.static.existingClaim | default (printf "%s-static" (include "foodgram.fullname" .)) }}
+      - name: media-volume
+        persistentVolumeClaim:
+          claimName: {{ .Values.persistence.media.existingClaim | default (printf "%s-media" (include "foodgram.fullname" .)) }}

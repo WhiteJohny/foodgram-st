@@ -1,0 +1,17 @@
+{{- if and .Values.persistence.static.enabled (not .Values.persistence.static.existingClaim) }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "foodgram.fullname" . }}-static
+  labels:
+    {{- include "foodgram.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - {{ .Values.persistence.static.accessMode | default "ReadWriteOnce" }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.static.size }}
+  {{- if .Values.persistence.static.storageClass }}
+  storageClassName: {{ .Values.persistence.static.storageClass }}
+  {{- end }}
+{{- end }}

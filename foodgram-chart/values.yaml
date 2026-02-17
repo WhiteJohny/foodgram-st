@@ -1,0 +1,136 @@
+# Default values for foodgram-chart.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Основные параметры приложения
+backend:
+  configMap:
+    data:
+      DB_ENGINE: "django.db.backends.postgresql"
+      DB_NAME: "foodgram"
+      DB_USER: "postgres"
+      DB_HOST: "db"
+      DB_PORT: "5432"
+      DJANGO_DEBUG: "False"
+      DJANGO_ALLOWED_HOSTS: "*"
+  replicaCount: 2
+  image:
+    repository: santino9/foodgram-backend
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    port: 8000
+    type: ClusterIP
+  livenessProbe:
+    enabled: true
+    path: /
+    initialDelaySeconds: 30
+    periodSeconds: 10
+  readinessProbe:
+    enabled: true
+    path: /
+    initialDelaySeconds: 5
+    periodSeconds: 5
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+
+# Секреты
+secret:
+  DB_PASSWORD: "CoreDcolor60"
+  SECRET_KEY: "django-insecure-q*)7tnare(0#d_=0dwhe13@*#(@k%oyflyih9xwz61vh)5)_fm"
+
+# Параметры nginx
+nginx:
+  replicaCount: 1
+  image:
+    repository: nginx
+    tag: "1.25.4-alpine"
+    pullPolicy: IfNotPresent
+  service:
+    type: LoadBalancer
+    port: 80
+  livenessProbe:
+    enabled: true
+    path: /
+    initialDelaySeconds: 30
+    periodSeconds: 10
+  readinessProbe:
+    enabled: true
+    path: /
+    initialDelaySeconds: 5
+    periodSeconds: 5
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+
+# Постоянные тома
+persistence:
+  static:
+    enabled: true
+    size: 2Gi
+    accessMode: ReadWriteOnce
+    storageClass: "standard"
+    existingClaim: ""
+  media:
+    enabled: true
+    size: 2Gi
+    accessMode: ReadWriteOnce
+    storageClass: "standard"
+    existingClaim: ""
+  frontendStatic:
+    enabled: true
+    size: 1Gi
+    accessMode: ReadWriteOnce
+    storageClass: "standard"
+    existingClaim: ""
+
+# Job для сборки фронтенда
+frontendJob:
+  enabled: true
+  image:
+    repository: santino9/foodgram-frontend
+    tag: latest
+  command: |
+    npm install && npm run build
+    cp -r /app/build/* /frontend-static/
+
+# Ingress
+ingress:
+  enabled: true
+  ingressClassName: nginx
+  annotations: {}
+  tls:
+    - hosts:
+        - foodgram.local
+      secretName: foodgram-tls
+  hosts:
+    - host: foodgram.local
+      paths:
+        - path: /
+          pathType: Prefix
+
+# Подчарт PostgreSQL
+postgresql:
+  enabled: true
+  database:
+    name: foodgram
+    user: postgres
+    password: ""   # обязательно переопределить
+  persistence:
+    size: 2Gi
+    storageClass: "manual"
+  image:
+    repository: postgres
+    tag: "17"
+
+httpRoute:
+  enabled: false

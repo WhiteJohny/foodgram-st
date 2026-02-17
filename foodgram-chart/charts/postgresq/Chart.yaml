@@ -1,0 +1,10 @@
+apiVersion: v2
+name: postgresql
+description: A Helm subchart for PostgreSQL StatefulSet
+type: application
+version: 0.1.0
+appVersion: "17"
+dependencies:
+  - name: postgresql
+    version: 0.1.0
+    condition: postgresql.enabled   # позволяет включать/отключать PostgreSQL через values

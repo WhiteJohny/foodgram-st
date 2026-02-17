@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "foodgram.fullname" . }}-nginx
+  labels:
+    {{- include "foodgram.labels" . | nindent 4 }}
+    app.kubernetes.io/component: nginx
+spec:
+  replicas: {{ .Values.nginx.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "foodgram.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: nginx
+  template:
+    metadata:
+      labels:
+        {{- include "foodgram.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: "{{ .Values.nginx.image.repository }}:{{ .Values.nginx.image.tag }}"
+        imagePullPolicy: {{ .Values.nginx.image.pullPolicy }}
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: nginx-conf
+          mountPath: /etc/nginx/conf.d/default.conf
+          subPath: default.conf
+        - name: frontend-static
+          mountPath: /usr/share/nginx/html
+        - name: static-volume
+          mountPath: /app/static
+        - name: media-volume
+          mountPath: /app/media
+        {{- if .Values.nginx.livenessProbe.enabled }}
+        livenessProbe:
+          httpGet:
+            path: {{ .Values.nginx.livenessProbe.path }}
+            port: 80
+          initialDelaySeconds: {{ .Values.nginx.livenessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.nginx.livenessProbe.periodSeconds }}
+        {{- end }}
+        {{- if .Values.nginx.readinessProbe.enabled }}
+        readinessProbe:
+          httpGet:
+            path: {{ .Values.nginx.readinessProbe.path }}
+            port: 80
+          initialDelaySeconds: {{ .Values.nginx.readinessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.nginx.readinessProbe.periodSeconds }}
+        {{- end }}
+        resources:
+          {{- toYaml .Values.nginx.resources | nindent 10 }}
+      volumes:
+      - name: nginx-conf
+        configMap:
+          name: {{ include "foodgram.fullname" . }}-nginx-config
+          items:
+          - key: nginx.conf
+            path: default.conf
+      - name: frontend-static
+        persistentVolumeClaim:
+          claimName: {{ .Values.persistence.frontendStatic.existingClaim | default (printf "%s-frontend-static" (include "foodgram.fullname" .)) }}
+      - name: static-volume
+        persistentVolumeClaim:
+          claimName: {{ .Values.persistence.static.existingClaim | default (printf "%s-static" (include "foodgram.fullname" .)) }}
+      - name: media-volume
+        persistentVolumeClaim:
+          claimName: {{ .Values.persistence.media.existingClaim | default (printf "%s-media" (include "foodgram.fullname" .)) }}

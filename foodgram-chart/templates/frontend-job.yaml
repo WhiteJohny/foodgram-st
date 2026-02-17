@@ -1,0 +1,31 @@
+{{- if .Values.frontendJob.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "foodgram.fullname" . }}-frontend-build
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "5"
+    "helm.sh/hook-delete-policy": hook-succeeded,before-hook-creation
+  labels:
+    {{- include "foodgram.labels" . | nindent 4 }}
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: frontend-builder
+        image: "{{ .Values.frontendJob.image.repository }}:{{ .Values.frontendJob.image.tag }}"
+        command:
+        - sh
+        - -c
+        - |
+{{ .Values.frontendJob.command | indent 10 }}
+        volumeMounts:
+        - name: frontend-static
+          mountPath: /frontend-static
+      volumes:
+      - name: frontend-static
+        persistentVolumeClaim:
+          claimName: {{ .Values.persistence.frontendStatic.existingClaim | default (printf "%s-frontend-static" (include "foodgram.fullname" .)) }}
+{{- end }}
