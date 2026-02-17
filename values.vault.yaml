@@ -1,0 +1,7 @@
+postgresql:
+  database:
+    password: ref+vault://secret/foodgram/postgres?proto=https#/password
+
+secret:
+  DB_PASSWORD: ref+vault://secret/foodgram/backend?proto=https#/DB_PASSWORD
+  SECRET_KEY: ref+vault://secret/foodgram/backend?proto=https#/SECRET_KEY
