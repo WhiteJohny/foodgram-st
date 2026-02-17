@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-config
+  namespace: foodgram
+data:
+  DB_ENGINE: "django.db.backends.postgresql"
+  DB_NAME: "foodgram"
+  DB_USER: "postgres"
+  DB_HOST: "db"
+  DB_PORT: "5432"
+  DJANGO_DEBUG: "False"
+  DJANGO_ALLOWED_HOSTS: "*"

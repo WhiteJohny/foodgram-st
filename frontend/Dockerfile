@@ -10,5 +10,4 @@ COPY . .
 
 RUN npm run build
 
-# Копируем результат в общий том
-CMD ["sh", "-c", "cp -r /app/build/* /app/build_volume/"]
+CMD ["npm", "run", "build"]

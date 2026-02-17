@@ -1,0 +1,88 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: django-migrations
+  namespace: foodgram
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      initContainers:
+      - name: wait-for-postgres
+        image: postgres:17
+        command:
+        - sh
+        - -c
+        - |
+          until pg_isready -h postgres-service -p 5432 -U $(DB_USER) -d $(DB_NAME); do
+            echo "Waiting for PostgreSQL..."
+            sleep 2
+          done
+        env:
+        - name: DB_USER
+          valueFrom:
+            configMapKeyRef:
+              name: backend-config
+              key: DB_USER
+        - name: DB_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: backend-config
+              key: DB_NAME
+        - name: PGPASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: foodgram-secret
+              key: DB_PASSWORD
+      containers:
+      - name: django-migrate
+        image: santino9/foodgram-backend:latest
+        command: ["python", "manage.py", "migrate"]
+        env:
+        - name: DB_ENGINE
+          valueFrom:
+            configMapKeyRef:
+              name: backend-config
+              key: DB_ENGINE
+        - name: DB_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: backend-config
+              key: DB_NAME
+        - name: DB_USER
+          valueFrom:
+            configMapKeyRef:
+              name: backend-config
+              key: DB_USER
+        - name: DB_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: backend-config
+              key: DB_HOST
+        - name: DB_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: backend-config
+              key: DB_PORT
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: foodgram-secret
+              key: DB_PASSWORD
+        - name: SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: foodgram-secret
+              key: SECRET_KEY
+        volumeMounts:
+        - name: static-volume
+          mountPath: /app/static
+        - name: media-volume
+          mountPath: /app/media
+      volumes:
+      - name: static-volume
+        persistentVolumeClaim:
+          claimName: static-volume-pvc
+      - name: media-volume
+        persistentVolumeClaim:
+          claimName: media-volume-pvc
