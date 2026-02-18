@@ -17,7 +17,7 @@ backend:
   image:
     repository: santino9/foodgram-backend
     tag: latest
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
   service:
     port: 8000
     type: ClusterIP
@@ -124,7 +124,7 @@ postgresql:
   database:
     name: foodgram
     user: postgres
-    password: ""   # обязательно переопределить
+    password: ""
   persistence:
     size: 2Gi
     storageClass: "manual"
@@ -134,3 +134,52 @@ postgresql:
 
 httpRoute:
   enabled: false
+
+rabbitmq:
+  username: ""
+  password: ""
+  host: "my-rabbitmq.default.svc.cluster.local"
+  port: 5672
+  secretName: rabbitmq-secrets
+  userKey: username
+  passwordKey: password
+
+nyt:
+  apiKey: ""
+  secretName: nyt-secret
+  apiKeyKey: NYT_API_KEY
+
+workers:
+  foodish:
+    enabled: true
+    replicaCount: 1
+    queue: foodish_tasks
+    outputDir: /output/foodish
+    persistence:
+      enabled: true
+      size: 1Gi
+      storageClass: ""
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "250m"
+      limits:
+        memory: "512Mi"
+        cpu: "500m"
+
+  nyt:
+    enabled: true
+    replicaCount: 1
+    queue: nyt_tasks
+    outputDir: /output/nyt
+    persistence:
+      enabled: true
+      size: 1Gi
+      storageClass: ""
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "250m"
+      limits:
+        memory: "512Mi"
+        cpu: "500m"

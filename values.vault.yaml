@@ -5,3 +5,10 @@ postgresql:
 secret:
   DB_PASSWORD: ref+vault://secret/foodgram/backend?proto=https#/DB_PASSWORD
   SECRET_KEY: ref+vault://secret/foodgram/backend?proto=https#/SECRET_KEY
+
+nyt:
+  apiKey: ref+vault://secret/foodgram/nyt?proto=https#/api_key
+
+rabbitmq:
+  username: ref+vault://secret/rabbitmq?proto=https#/username
+  password: ref+vault://secret/rabbitmq?proto=https#/password

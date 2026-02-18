@@ -31,7 +31,7 @@ helm upgrade --install "$RELEASE_NAME" "$CHART_PATH" \
     --values "$VALUES_BASE" \
     --values "$TMP_VALUES" \
     --wait \
-    --timeout 10m
+    --timeout 3m
 
 # Удаляем временный файл
 rm "$TMP_VALUES"

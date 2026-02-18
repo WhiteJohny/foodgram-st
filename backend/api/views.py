@@ -43,6 +43,8 @@ from .serializers import (
     ShortCodeValidatorSerializer,
 )
 
+from recipes.tasks import publish_task
+
 
 class UserViewSet(DjoserUserViewSet):
     """Вьюсет для работы с пользователями"""
@@ -271,7 +273,10 @@ class RecipeViewSet(viewsets.ModelViewSet):
         return RecipeSerializer
 
     def perform_create(self, serializer):
-        serializer.save(author=self.request.user)
+        recipe = serializer.save(author=self.request.user)
+        message = {'recipe_id': recipe.id}
+        publish_task(settings.RABBITMQ_FOODISH_QUEUE, message)
+        publish_task(settings.RABBITMQ_NYT_QUEUE, message)
 
     @action(
         detail=True,
