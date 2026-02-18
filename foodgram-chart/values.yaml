@@ -41,8 +41,8 @@ backend:
 
 # Секреты
 secret:
-  DB_PASSWORD: "CoreDcolor60"
-  SECRET_KEY: "django-insecure-q*)7tnare(0#d_=0dwhe13@*#(@k%oyflyih9xwz61vh)5)_fm"
+  DB_PASSWORD: ""
+  SECRET_KEY: ""
 
 # Параметры nginx
 nginx:

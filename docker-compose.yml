@@ -11,7 +11,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     env_file:
-      - .env
+      - backend/.env
     networks:
       - app-network
     healthcheck:
@@ -30,7 +30,7 @@ services:
       - static_volume:/app/static
       - media_volume:/app/media
     env_file:
-      - .env
+      - backend/.env
     environment:
       DB_ENGINE: django.db.backends.postgresql
       DB_NAME: ${DB_NAME}
