@@ -1,0 +1,45 @@
+auth:
+  existingPasswordSecret: rabbitmq-secrets
+  existingErlangSecret: rabbitmq-secrets
+
+service:
+  type: LoadBalancer
+
+ingress:
+  enabled: true
+  hostname: rabbitmq.local
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+  path: "/"
+  pathType: Prefix
+
+# Management Plugin для доступа к веб-интерфейсу
+metrics:
+  enabled: true
+
+persistence:
+  enabled: true
+  storageClass: "standard"
+  size: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  volumePermissions:
+    enabled: true
+
+image:
+  registry: docker.io
+  repository: bitnamilegacy/rabbitmq
+  tag: 4.1.3-debian-12-r0
+
+global:
+  security:
+    allowInsecureImages: true
+
+resources:
+  requests:
+    memory: "256Mi"
+    cpu: "250m"
+  limits:
+    memory: "512Mi"
+    cpu: "500m"
