@@ -1,0 +1,64 @@
+{{- if .Values.celery.worker.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "foodgram.fullname" . }}-celery-worker
+  labels:
+    {{- include "foodgram.labels" . | nindent 4 }}
+    app.kubernetes.io/component: celery-worker
+spec:
+  replicas: {{ .Values.celery.worker.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "foodgram.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: celery-worker
+  template:
+    metadata:
+      labels:
+        {{- include "foodgram.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: celery-worker
+    spec:
+      containers:
+      - name: worker
+        image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag }}"
+        imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
+        command: {{ .Values.celery.worker.command | default (list "celery" "-A" "foodgram" "worker" "-l" "info") | toJson }}
+        envFrom:
+        - configMapRef:
+            name: {{ include "foodgram.fullname" . }}-config
+        env:
+        - name: RABBITMQ_USER
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.rabbitmq.secretName | default "rabbitmq-secrets" }}
+              key: {{ .Values.rabbitmq.userKey | default "username" }}
+        - name: RABBITMQ_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.rabbitmq.secretName | default "rabbitmq-secrets" }}
+              key: {{ .Values.rabbitmq.passwordKey | default "password" }}
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "foodgram.fullname" . }}-secret
+              key: DB_PASSWORD
+        - name: SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "foodgram.fullname" . }}-secret
+              key: SECRET_KEY
+        - name: CELERY_BROKER_URL
+          value: "amqp://{{ .Values.rabbitmq.username }}:{{ .Values.rabbitmq.password }}@{{ .Values.rabbitmq.host }}:{{ .Values.rabbitmq.port }}/{{ .Values.rabbitmq.vhost }}"
+        - name: NYT_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.nyt.secretName }}
+              key: {{ .Values.nyt.apiKeyKey | default "NYT_API_KEY" }}
+        volumeMounts:
+          - name: output
+            mountPath: /output
+      volumes:
+        - name: output
+          persistentVolumeClaim:
+            claimName: {{ include "foodgram.fullname" . }}-celery-output
+{{- end }}

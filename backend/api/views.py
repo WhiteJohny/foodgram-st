@@ -43,7 +43,8 @@ from .serializers import (
     ShortCodeValidatorSerializer,
 )
 
-from recipes.tasks import publish_task
+# from recipes.tasks import publish_task
+from recipes.tasks import fetch_foodish_image, fetch_nyt_article
 
 
 class UserViewSet(DjoserUserViewSet):
@@ -274,9 +275,11 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         recipe = serializer.save(author=self.request.user)
-        message = {'recipe_id': recipe.id}
-        publish_task(settings.RABBITMQ_FOODISH_QUEUE, message)
-        publish_task(settings.RABBITMQ_NYT_QUEUE, message)
+        # message = {'recipe_id': recipe.id}
+        # publish_task(settings.RABBITMQ_FOODISH_QUEUE, message)
+        # publish_task(settings.RABBITMQ_NYT_QUEUE, message)
+        fetch_foodish_image.delay(recipe.id)
+        fetch_nyt_article.delay(recipe.id)
 
     @action(
         detail=True,

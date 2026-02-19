@@ -1,0 +1,76 @@
+{{- if .Values.flower.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "foodgram.fullname" . }}-flower
+  labels:
+    {{- include "foodgram.labels" . | nindent 4 }}
+    app.kubernetes.io/component: flower
+spec:
+  replicas: {{ .Values.flower.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "foodgram.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: flower
+  template:
+    metadata:
+      labels:
+        {{- include "foodgram.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: flower
+    spec:
+      containers:
+      - name: flower
+        image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag }}"
+        imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
+        command: ["celery"]
+        args:
+          - "-A"
+          - "foodgram"
+          - "flower"
+          - "--port={{ .Values.flower.service.port }}"
+          - "--broker=amqp://$(RABBITMQ_USER):$(RABBITMQ_PASSWORD)@$(RABBITMQ_HOST):$(RABBITMQ_PORT)/{{ .Values.rabbitmq.vhost }}"
+          {{- if .Values.flower.prometheus.enabled }}
+          - "--prometheus_metrics"
+          {{- end }}
+        env:
+          - name: RABBITMQ_USER
+            valueFrom:
+              secretKeyRef:
+                name: {{ .Values.rabbitmq.secretName }}
+                key: {{ .Values.rabbitmq.userKey | default "username" }}
+          - name: RABBITMQ_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: {{ .Values.rabbitmq.secretName }}
+                key: {{ .Values.rabbitmq.passwordKey | default "password" }}
+          - name: RABBITMQ_HOST
+            value: {{ .Values.rabbitmq.host | quote }}
+          - name: RABBITMQ_PORT
+            value: {{ .Values.rabbitmq.port | quote }}
+          - name: RABBITMQ_VHOST
+            value: {{ .Values.rabbitmq.vhost | default "" | quote }}
+          - name: CELERY_BROKER_URL
+            value: "amqp://$(RABBITMQ_USER):$(RABBITMQ_PASSWORD)@$(RABBITMQ_HOST):$(RABBITMQ_PORT)/{{ .Values.rabbitmq.vhost }}"
+          - name: NYT_API_KEY
+            valueFrom:
+              secretKeyRef:
+                name: {{ .Values.nyt.secretName }}
+                key: {{ .Values.nyt.apiKeyKey | default "NYT_API_KEY" }}
+        ports:
+          - containerPort: {{ .Values.flower.service.port }}
+            name: http
+        livenessProbe:
+          httpGet:
+            path: /
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        resources:
+          {{- toYaml .Values.flower.resources | nindent 10 }}
+{{- end }}

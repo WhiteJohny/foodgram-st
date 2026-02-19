@@ -139,47 +139,75 @@ rabbitmq:
   username: ""
   password: ""
   host: "my-rabbitmq.default.svc.cluster.local"
+  vhost: "foodgram"
   port: 5672
   secretName: rabbitmq-secrets
   userKey: username
   passwordKey: password
 
+celery:
+  resultBackend: "rpc://"
+  acceptContent: "json"
+  taskSerializer: "json"
+  resultSerializer: "json"
+  timezone: "UTC"
+
+  worker:
+    enabled: true
+    replicaCount: 2
+    command:
+      - celery
+      - -A
+      - foodgram
+      - worker
+      - -l
+      - info
+      - -Q
+      - foodish,nyt
+    persistence:
+      enabled: true
+      size: 1Gi
+      storageClass: "standard"
+      outputDir: "/output"
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "250m"
+      limits:
+        memory: "512Mi"
+        cpu: "500m"
+
+# Flower настройки
+flower:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: mher/flower
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 5555
+    annotations: {}
+  prometheus:
+    enabled: true
+  extraArgs: []
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "200m"
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    host: flower.local
+    path: /
+    annotations: {}
+    tls: []
+
 nyt:
-  apiKey: ""
+  api_key: ""
   secretName: nyt-secret
   apiKeyKey: NYT_API_KEY
-
-workers:
-  foodish:
-    enabled: true
-    replicaCount: 1
-    queue: foodish_tasks
-    outputDir: /output/foodish
-    persistence:
-      enabled: true
-      size: 1Gi
-      storageClass: ""
-    resources:
-      requests:
-        memory: "256Mi"
-        cpu: "250m"
-      limits:
-        memory: "512Mi"
-        cpu: "500m"
-
-  nyt:
-    enabled: true
-    replicaCount: 1
-    queue: nyt_tasks
-    outputDir: /output/nyt
-    persistence:
-      enabled: true
-      size: 1Gi
-      storageClass: ""
-    resources:
-      requests:
-        memory: "256Mi"
-        cpu: "250m"
-      limits:
-        memory: "512Mi"
-        cpu: "500m"

@@ -1,4 +1,3 @@
-# Количество реплик (для PostgreSQL обычно 1)
 replicaCount: 1
 
 # Настройки образа
@@ -11,7 +10,7 @@ image:
 database:
   name: foodgram
   user: postgres
-  password: ""   # обязателен, должен быть переопределён при установке
+  password: ""
 
 # Сервис
 service:
@@ -22,7 +21,7 @@ service:
 persistence:
   enabled: true
   size: 2Gi
-  storageClass: ""          # если не указан, используется default
+  storageClass: ""
   accessMode: ReadWriteOnce
 
 # Ресурсы
@@ -51,8 +50,7 @@ readinessProbe:
     database:
       name: foodgram
       user: postgres
-      password: ""   # обязательно переопределить при установке
+      password: ""
     persistence:
       size: 2Gi
-      storageClass: "manual"   # если вы используете статический PV с таким классом
-    # остальные параметры можно переопределить по необходимости
+      storageClass: "manual"   # статический PV

@@ -50,66 +50,43 @@ spec:
         imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
         ports:
         - containerPort: {{ .Values.backend.service.port }}
+        envFrom:
+          - configMapRef:
+              name: {{ include "foodgram.fullname" . }}-config
         env:
-        - name: DB_ENGINE
-          valueFrom:
-            configMapKeyRef:
-              name: {{ include "foodgram.fullname" . }}-backend-config
-              key: DB_ENGINE
-        - name: DB_NAME
-          valueFrom:
-            configMapKeyRef:
-              name: {{ include "foodgram.fullname" . }}-backend-config
-              key: DB_NAME
-        - name: DB_USER
-          valueFrom:
-            configMapKeyRef:
-              name: {{ include "foodgram.fullname" . }}-backend-config
-              key: DB_USER
-        - name: DB_HOST
-          valueFrom:
-            configMapKeyRef:
-              name: {{ include "foodgram.fullname" . }}-backend-config
-              key: DB_HOST
-        - name: DB_PORT
-          valueFrom:
-            configMapKeyRef:
-              name: {{ include "foodgram.fullname" . }}-backend-config
-              key: DB_PORT
-        - name: DJANGO_DEBUG
-          valueFrom:
-            configMapKeyRef:
-              name: {{ include "foodgram.fullname" . }}-backend-config
-              key: DJANGO_DEBUG
-        - name: DJANGO_ALLOWED_HOSTS
-          valueFrom:
-            configMapKeyRef:
-              name: {{ include "foodgram.fullname" . }}-backend-config
-              key: DJANGO_ALLOWED_HOSTS
-        - name: DB_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: {{ include "foodgram.fullname" . }}-secret
-              key: DB_PASSWORD
-        - name: SECRET_KEY
-          valueFrom:
-            secretKeyRef:
-              name: {{ include "foodgram.fullname" . }}-secret
-              key: SECRET_KEY
-        - name: RABBITMQ_HOST
-          value: {{ .Values.rabbitmq.host | default "my-rabbitmq.default.svc.cluster.local" | quote }}
-        - name: RABBITMQ_PORT
-          value: {{ .Values.rabbitmq.port | default "5672" | quote }}
-        - name: RABBITMQ_USER
-          valueFrom:
-            secretKeyRef:
-              name: {{ .Values.rabbitmq.secretName }}
-              key: {{ .Values.rabbitmq.userKey | default "username" }}
-        - name: RABBITMQ_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: {{ .Values.rabbitmq.secretName }}
-              key: {{ .Values.rabbitmq.passwordKey | default "password" }}
+          - name: RABBITMQ_HOST
+            value: {{ .Values.rabbitmq.host | default "my-rabbitmq.default.svc.cluster.local" | quote }}
+          - name: RABBITMQ_PORT
+            value: {{ .Values.rabbitmq.port | default "5672" | quote }}
+          - name: RABBITMQ_USER
+            valueFrom:
+              secretKeyRef:
+                name: {{ .Values.rabbitmq.secretName }}
+                key: {{ .Values.rabbitmq.userKey | default "username" }}
+          - name: RABBITMQ_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: {{ .Values.rabbitmq.secretName }}
+                key: {{ .Values.rabbitmq.passwordKey | default "password" }}
+          - name: RABBITMQ_VHOST
+            value: {{ .Values.rabbitmq.vhost | default "" | quote }}
+          - name: CELERY_BROKER_URL
+            value: "amqp://$(RABBITMQ_USER):$(RABBITMQ_PASSWORD)@$(RABBITMQ_HOST):$(RABBITMQ_PORT)/{{ .Values.rabbitmq.vhost }}"
+          - name: DB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "foodgram.fullname" . }}-secret
+                key: DB_PASSWORD
+          - name: SECRET_KEY
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "foodgram.fullname" . }}-secret
+                key: SECRET_KEY
+          - name: NYT_API_KEY
+            valueFrom:
+              secretKeyRef:
+                name: {{ .Values.nyt.secretName }}
+                key: {{ .Values.nyt.apiKeyKey | default "NYT_API_KEY" }}
         volumeMounts:
         - name: static-volume
           mountPath: /app/static

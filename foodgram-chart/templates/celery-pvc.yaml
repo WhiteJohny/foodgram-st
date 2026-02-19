@@ -1,0 +1,18 @@
+{{- if and .Values.celery.worker.enabled .Values.celery.worker.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "foodgram.fullname" . }}-celery-output
+  labels:
+    {{- include "foodgram.labels" . | nindent 4 }}
+    app.kubernetes.io/component: celery-worker
+spec:
+  accessModes:
+    - {{ .Values.celery.worker.persistence.accessMode | default "ReadWriteOnce" }}
+  resources:
+    requests:
+      storage: {{ .Values.celery.worker.persistence.size }}
+  {{- if .Values.celery.worker.persistence.storageClass }}
+  storageClassName: {{ .Values.celery.worker.persistence.storageClass }}
+  {{- end }}
+{{- end }}

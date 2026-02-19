@@ -1,0 +1,29 @@
+{{- if .Values.flower.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "foodgram.fullname" . }}-flower
+  labels:
+    {{- include "foodgram.labels" . | nindent 4 }}
+  {{- with .Values.flower.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  ingressClassName: {{ .Values.flower.ingress.ingressClassName }}
+  rules:
+    - host: {{ .Values.flower.ingress.host | quote }}
+      http:
+        paths:
+          - path: {{ .Values.flower.ingress.path | default "/" }}
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "foodgram.fullname" . }}-flower
+                port:
+                  number: {{ .Values.flower.service.port }}
+  {{- with .Values.flower.ingress.tls }}
+  tls:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+{{- end }}
