@@ -12,3 +12,7 @@ nyt:
 rabbitmq:
   username: ref+vault://secret/rabbitmq?proto=https#/username
   password: ref+vault://secret/rabbitmq?proto=https#/password
+
+redis:
+  auth:
+    password: ref+vault://secret/redis?proto=https#/password

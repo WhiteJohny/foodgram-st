@@ -28,34 +28,23 @@ spec:
           - "foodgram"
           - "flower"
           - "--port={{ .Values.flower.service.port }}"
-          - "--broker=amqp://$(RABBITMQ_USER):$(RABBITMQ_PASSWORD)@$(RABBITMQ_HOST):$(RABBITMQ_PORT)/{{ .Values.rabbitmq.vhost }}"
+          - "--broker=$(CELERY_BROKER_URL)"
           {{- if .Values.flower.prometheus.enabled }}
           - "--prometheus_metrics"
           {{- end }}
+        envFrom:
+        - configMapRef:
+            name: {{ include "foodgram.fullname" . }}-config
+        - secretRef:
+            name: {{ include "foodgram.fullname" . }}-secret
         env:
-          - name: RABBITMQ_USER
-            valueFrom:
-              secretKeyRef:
-                name: {{ .Values.rabbitmq.secretName }}
-                key: {{ .Values.rabbitmq.userKey | default "username" }}
-          - name: RABBITMQ_PASSWORD
-            valueFrom:
-              secretKeyRef:
-                name: {{ .Values.rabbitmq.secretName }}
-                key: {{ .Values.rabbitmq.passwordKey | default "password" }}
-          - name: RABBITMQ_HOST
-            value: {{ .Values.rabbitmq.host | quote }}
-          - name: RABBITMQ_PORT
-            value: {{ .Values.rabbitmq.port | quote }}
-          - name: RABBITMQ_VHOST
-            value: {{ .Values.rabbitmq.vhost | default "" | quote }}
-          - name: CELERY_BROKER_URL
-            value: "amqp://$(RABBITMQ_USER):$(RABBITMQ_PASSWORD)@$(RABBITMQ_HOST):$(RABBITMQ_PORT)/{{ .Values.rabbitmq.vhost }}"
-          - name: NYT_API_KEY
-            valueFrom:
-              secretKeyRef:
-                name: {{ .Values.nyt.secretName }}
-                key: {{ .Values.nyt.apiKeyKey | default "NYT_API_KEY" }}
+        - name: NYT_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.nyt.secretName }}
+              key: {{ .Values.nyt.apiKeyKey | default "NYT_API_KEY" }}
+        - name: CELERY_BROKER_URL
+          value: "redis://:$(REDIS_PASSWORD)@$(REDIS_HOST):$(REDIS_PORT)/0"
         ports:
           - containerPort: {{ .Values.flower.service.port }}
             name: http

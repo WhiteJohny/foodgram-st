@@ -1,9 +1,7 @@
 server:
-  # Используем один под (dev mode не для production)
   affinity: ""
   ha:
     enabled: false
-  # Для теста можно использовать standalone режим
   standalone:
     enabled: true
     config: |
@@ -16,11 +14,9 @@ server:
       storage "file" {
         path = "/vault/data"
       }
-  # Включить веб-интерфейс
   ui:
     enabled: true
-    serviceType: "ClusterIP" # Мы позже сделаем Ingress
+    serviceType: "ClusterIP"
 
-  # Для теста отключаем tls (в production обязательно включить)
   global:
     tlsDisable: true

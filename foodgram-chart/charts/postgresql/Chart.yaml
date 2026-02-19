@@ -7,4 +7,4 @@ appVersion: "17"
 dependencies:
   - name: postgresql
     version: 0.1.0
-    condition: postgresql.enabled   # позволяет включать/отключать PostgreSQL через values
+    condition: postgresql.enabled

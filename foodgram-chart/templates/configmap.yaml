@@ -19,7 +19,8 @@ data:
   RABBITMQ_PORT: {{ .Values.rabbitmq.port | default "5672" | quote }}
 
   # Celery settings
-  CELERY_RESULT_BACKEND: {{ .Values.celery.resultBackend | default "rpc://" | quote }}
+  CELERY_BROKER_URL: {{ .Values.celery.brokerUrl | default (printf "redis://:%s@%s:%s/0" .Values.redis.password .Values.redis.host .Values.redis.port) | quote }}
+  CELERY_RESULT_BACKEND: {{ .Values.celery.resultBackend | default (printf "redis://:%s@%s:%s/0" .Values.redis.password .Values.redis.host .Values.redis.port) | quote }}
   CELERY_ACCEPT_CONTENT: {{ .Values.celery.acceptContent | default "json" | quote }}
   CELERY_TASK_SERIALIZER: {{ .Values.celery.taskSerializer | default "json" | quote }}
   CELERY_RESULT_SERIALIZER: {{ .Values.celery.resultSerializer | default "json" | quote }}
@@ -27,3 +28,11 @@ data:
 
   # Flower settings
   FLOWER_PORT: {{ .Values.flower.service.port | default "5555" | quote }}
+
+  # Redis settings
+  REDIS_HOST: {{ .Release.Name }}-redis
+  REDIS_PORT: "6379"
+  REDIS_PASSWORD: ""
+
+  # Django cache
+  CACHE_URL: "redis://:$(REDIS_PASSWORD)@$(REDIS_HOST):$(REDIS_PORT)/1"

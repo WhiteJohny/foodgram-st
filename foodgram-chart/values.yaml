@@ -211,3 +211,22 @@ nyt:
   api_key: ""
   secretName: nyt-secret
   apiKeyKey: NYT_API_KEY
+
+redis:
+  enabled: true
+  architecture: standalone
+  auth:
+    enabled: true
+    password: ""
+  master:
+    persistence:
+      enabled: true
+      size: 8Gi
+      storageClass: "standard"
+  resources:
+    requests:
+      memory: 256Mi
+      cpu: 250m
+    limits:
+      memory: 512Mi
+      cpu: 500m
