@@ -1,0 +1,96 @@
+import random
+from locust import HttpUser, task, between, events
+
+
+class AnonymousUser(HttpUser):
+    weight = 3
+    wait_time = between(1, 3)
+
+    def on_start(self):
+        self.recipe_ids = []
+        resp = self.client.get("/api/recipes/?page=1&limit=6", name="/api/recipes/")
+        if resp.status_code == 200:
+            results = resp.json().get("results", [])
+            self.recipe_ids = [r["id"] for r in results]
+
+    @task(5)
+    def get_recipes_list(self):
+        self.client.get("/api/recipes/?page=1&limit=6", name="/api/recipes/")
+
+    @task(3)
+    def get_single_recipe(self):
+        if self.recipe_ids:
+            recipe_id = random.choice(self.recipe_ids)
+            self.client.get(f"/api/recipes/{recipe_id}/", name="/api/recipes/:id/")
+
+    @task(2)
+    def get_ingredients(self):
+        queries = ["кур", "мол", "соль", "масл", "яйц"]
+        self.client.get(f"/api/ingredients/?name={random.choice(queries)}", name="/api/ingredients/")
+
+
+class AuthenticatedUser(HttpUser):
+    weight = 1
+    wait_time = between(2, 5)
+
+    # Инициализируем атрибуты здесь — on_stop не упадёт даже если on_start не завершился
+    authenticated = False
+    recipe_ids = []
+
+    def on_start(self):
+        self.authenticated = False
+        self.recipe_ids = []
+
+        resp = self.client.post(
+            "/api/auth/token/login/",
+            json={"email": "sprut@gmail.com", "password": "Sprut123"},
+            name="/api/auth/token/login/"
+        )
+        if resp.status_code == 200:
+            token = resp.json().get("auth_token")
+            self.client.headers.update({"Authorization": f"Token {token}"})
+            self.authenticated = True
+
+        resp = self.client.get("/api/recipes/?page=1&limit=6", name="/api/recipes/")
+        if resp.status_code == 200:
+            results = resp.json().get("results", [])
+            self.recipe_ids = [r["id"] for r in results]
+
+    @task(4)
+    def get_recipes(self):
+        self.client.get("/api/recipes/", name="/api/recipes/")
+
+    @task(2)
+    def get_single_recipe(self):
+        if self.recipe_ids:
+            recipe_id = random.choice(self.recipe_ids)
+            self.client.get(f"/api/recipes/{recipe_id}/", name="/api/recipes/:id/")
+
+    @task(2)
+    def get_favorites(self):
+        self.client.get("/api/recipes/?is_favorited=1", name="/api/recipes/?is_favorited=1")
+
+    @task(1)
+    def get_me(self):
+        self.client.get("/api/users/me/", name="/api/users/me/")
+
+    @task(1)
+    def get_subscriptions(self):
+        self.client.get("/api/users/subscriptions/", name="/api/users/subscriptions/")
+
+    def on_stop(self):
+        if self.authenticated:
+            self.client.post("/api/auth/token/logout/", name="/api/auth/token/logout/")
+
+
+@events.quitting.add_listener
+def on_quitting(environment, **kwargs):
+    total = environment.stats.total
+    print(f"\nВсего запросов:     {total.num_requests}")
+    print(f"Ошибок:             {total.num_failures} ({total.fail_ratio * 100:.1f}%)")
+    print(f"Среднее время (ms): {total.avg_response_time:.0f}")
+    print(f"p95 (ms):           {total.get_response_time_percentile(0.95):.0f}")
+    if total.fail_ratio > 0.01 or total.get_response_time_percentile(0.95) > 7000:
+        environment.process_exit_code = 1
+    else:
+        environment.process_exit_code = 0

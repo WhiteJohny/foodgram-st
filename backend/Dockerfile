@@ -30,7 +30,9 @@ ENV DJANGO_SETTINGS_MODULE=foodgram.settings
 RUN apt-get update && apt-get install -y \
     netcat-traditional \
     postgresql-client \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+
+COPY data/ /app/data/
 
 # Запуск entrypoint скрипта
 ENTRYPOINT ["/app/entrypoint.sh"]
