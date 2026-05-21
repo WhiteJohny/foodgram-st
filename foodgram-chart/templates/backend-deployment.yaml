@@ -1,0 +1,88 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: {{ include "foodgram.namespace" . }}
+  labels:
+    {{- include "foodgram.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backend
+spec:
+  replicas: {{ .Values.backend.replicas }}
+  selector:
+    matchLabels:
+      {{- include "foodgram.backend.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "foodgram.backend.selectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ .Values.serviceAccount.name }}
+      # Ждём пока ESO создаст секрет перед стартом пода
+      initContainers:
+        - name: wait-for-secret
+          image: bitnami/kubectl:latest
+          command:
+            - sh
+            - -c
+            - |
+              until kubectl get secret {{ include "foodgram.secretName" . }} -n {{ include "foodgram.namespace" . }}; do
+                echo "Waiting for secret {{ include "foodgram.secretName" . }}..."
+                sleep 5
+              done
+              echo "Secret is ready!"
+      containers:
+        - name: backend
+          image: {{ .Values.backend.image }}
+          imagePullPolicy: {{ .Values.backend.imagePullPolicy }}
+          ports:
+            - name: gunicorn
+              containerPort: 8000
+              protocol: TCP
+          # Несекретные переменные — из values.yaml
+          env:
+            - name: DJANGO_DEBUG
+              value: {{ .Values.backend.env.DJANGO_DEBUG | quote }}
+            - name: DB_ENGINE
+              value: {{ .Values.backend.env.DB_ENGINE | quote }}
+            - name: DB_HOST
+              value: {{ .Values.backend.env.DB_HOST | quote }}
+            - name: DB_PORT
+              value: {{ .Values.backend.env.DB_PORT | quote }}
+            - name: DJANGO_ALLOWED_HOSTS
+              value: {{ .Values.backend.env.DJANGO_ALLOWED_HOSTS | quote }}
+          # Секретные переменные — из K8s Secret (созданного ESO)
+          envFrom:
+            - secretRef:
+                name: {{ include "foodgram.secretName" . }}
+          volumeMounts:
+            - name: static
+              mountPath: /app/static
+            - name: media
+              mountPath: /app/media
+            - name: data
+              mountPath: /app/data
+          resources:
+            {{- toYaml .Values.backend.resources | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: /api/
+              port: gunicorn
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /api/
+              port: gunicorn
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            failureThreshold: 3
+      volumes:
+        - name: static
+          persistentVolumeClaim:
+            claimName: static-pvc
+        - name: media
+          persistentVolumeClaim:
+            claimName: media-pvc
+        - name: data
+          emptyDir: {}

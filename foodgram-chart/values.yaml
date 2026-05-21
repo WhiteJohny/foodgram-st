@@ -1,0 +1,127 @@
+# =============================================================================
+# Foodgram Helm Chart — values.yaml
+# Чувствительные данные (пароли, ключи) хранятся в Vault,
+# сюда попадают только несекретные конфигурационные параметры.
+# =============================================================================
+
+namespace: foodgram
+
+# -----------------------------------------------------------------------------
+# Backend (Django)
+# -----------------------------------------------------------------------------
+backend:
+  image: docker.io/santino9/foodgram-backend:latest
+  imagePullPolicy: Always
+  replicas: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 512Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+  # Несекретные env-переменные Django
+  env:
+    DJANGO_DEBUG: "False"
+    DB_ENGINE: django.db.backends.postgresql
+    DB_HOST: foodgram-postgresql   # имя сервиса bitnami postgresql
+    DB_PORT: "5432"
+    DJANGO_ALLOWED_HOSTS: "*"
+
+# -----------------------------------------------------------------------------
+# Frontend Job (npm run build)
+# -----------------------------------------------------------------------------
+frontend:
+  image: docker.io/santino9/foodgram-frontend:latest
+  imagePullPolicy: IfNotPresent
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+
+# -----------------------------------------------------------------------------
+# Nginx
+# -----------------------------------------------------------------------------
+nginx:
+  image: docker.io/santino9/foodgram-nginx:latest
+  imagePullPolicy: IfNotPresent
+  replicas: 1
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+
+# -----------------------------------------------------------------------------
+# Ingress
+# -----------------------------------------------------------------------------
+ingress:
+  host: foodgram.local        # замени на свой домен
+  tlsSecretName: foodgram-tls # kubectl create secret tls ...
+
+# -----------------------------------------------------------------------------
+# Persistent Volumes
+# -----------------------------------------------------------------------------
+persistence:
+  static:
+    size: 1Gi
+    storageClass: standard
+  media:
+    size: 2Gi
+    storageClass: standard
+  frontendBuild:
+    size: 500Mi
+    storageClass: standard
+
+# -----------------------------------------------------------------------------
+# Vault + External Secrets Operator
+# -----------------------------------------------------------------------------
+vault:
+  address: "http://vault.vault.svc.cluster.local:8200"
+  role: "foodgram-role"
+  # путь к секретам в Vault (kv-v2: реальный путь будет foodgram/data/app)
+  secretPath: "foodgram/data/app"
+
+externalSecrets:
+  # имя K8s Secret который создаст ESO
+  secretName: foodgram-secrets
+  # как часто ESO синхронизирует секреты из Vault
+  refreshInterval: "1h"
+
+# -----------------------------------------------------------------------------
+# ServiceAccount для Vault Kubernetes auth
+# -----------------------------------------------------------------------------
+serviceAccount:
+  name: vault-auth
+
+# -----------------------------------------------------------------------------
+# Bitnami PostgreSQL subchart
+# https://github.com/bitnami/charts/tree/main/bitnami/postgresql
+# -----------------------------------------------------------------------------
+postgresql:
+  enabled: true
+  auth:
+    # ESO создаст Secret foodgram-secrets с ключами DB_NAME, DB_USER, DB_PASSWORD
+    # Bitnami умеет читать пароль из existingSecret
+    existingSecret: foodgram-secrets
+    secretKeys:
+      adminPasswordKey: DB_PASSWORD
+      userPasswordKey: DB_PASSWORD
+      replicationPasswordKey: DB_PASSWORD
+    # username и database задаются через секрет напрямую в initdb,
+    # либо явно здесь (не секретные данные можно оставить):
+    username: foodgram_user
+    database: foodgram_db
+  primary:
+    persistence:
+      enabled: true
+      size: 1Gi
+      storageClass: standard
+  image:
+    pullPolicy: IfNotPresent
+    tag: latest

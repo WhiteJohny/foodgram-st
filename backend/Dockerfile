@@ -27,5 +27,10 @@ RUN chmod +x /app/entrypoint.sh
 ENV PYTHONUNBUFFERED=1
 ENV DJANGO_SETTINGS_MODULE=foodgram.settings
 
+RUN apt-get update && apt-get install -y \
+    netcat-traditional \
+    postgresql-client \
+    && rm -rf /var/lib/apt/lists/*
+
 # Запуск entrypoint скрипта
 ENTRYPOINT ["/app/entrypoint.sh"]

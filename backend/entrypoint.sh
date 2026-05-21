@@ -3,11 +3,13 @@
 # Функция для проверки доступности PostgreSQL
 wait_for_postgres() {
     echo "Waiting for postgres..."
-    while ! nc -z db 5432; do
-        sleep 0.1
+    echo ${DB_HOST}
+    until pg_isready -h ${DB_HOST} -p ${DB_PORT} -U ${DB_USER}; do
+        sleep 1
     done
     echo "PostgreSQL started"
 }
+
 
 # Функция для применения миграций
 apply_migrations() {
