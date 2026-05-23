@@ -7,7 +7,12 @@ metadata:
     {{- include "foodgram.labels" . | nindent 4 }}
     app.kubernetes.io/component: backend
 spec:
+  # Когда HPA включён — replicas не указываем вообще.
+  # HPA становится единственным владельцем spec.replicas через kube-controller-manager.
+  # Если прописать replicas здесь, helm upgrade будет конфликтовать с HPA (SSA-конфликт).
+  {{- if not .Values.hpa.enabled }}
   replicas: {{ .Values.backend.replicas }}
+  {{- end }}
   selector:
     matchLabels:
       {{- include "foodgram.backend.selectorLabels" . | nindent 6 }}
@@ -29,6 +34,22 @@ spec:
                 sleep 5
               done
               echo "Secret is ready!"
+        # Ждём готовности PostgreSQL через headless-сервис.
+        # Используем *-hl (headless), а не ClusterIP: headless всегда резолвится
+        # в IP пода даже если readiness probe кратковременно не проходит —
+        # ClusterIP же убирает endpoint и даёт connection refused.
+        - name: wait-for-postgres
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              echo "Waiting for PostgreSQL at {{ .Values.backend.env.DB_HOST }}:{{ .Values.backend.env.DB_PORT }}..."
+              until nc -z {{ .Values.backend.env.DB_HOST }}-hl {{ .Values.backend.env.DB_PORT }}; do
+                echo "PostgreSQL not ready yet, retrying in 3s..."
+                sleep 3
+              done
+              echo "PostgreSQL is ready!"
       containers:
         - name: backend
           image: {{ .Values.backend.image }}
@@ -65,16 +86,19 @@ spec:
             httpGet:
               path: /api/
               port: gunicorn
-            initialDelaySeconds: 30
+            # Даём время на старт Django даже под нагрузкой
+            initialDelaySeconds: 45
             periodSeconds: 10
-            failureThreshold: 3
+            failureThreshold: 6
           readinessProbe:
             httpGet:
               path: /api/
               port: gunicorn
-            initialDelaySeconds: 15
+            # Было 15s — слишком мало когда postgres занят и gunicorn медленно стартует
+            initialDelaySeconds: 30
             periodSeconds: 5
-            failureThreshold: 3
+            # 10 попыток × 5s = 50s окно до признания пода NotReady
+            failureThreshold: 10
       volumes:
         - name: static
           persistentVolumeClaim:

@@ -3,12 +3,12 @@ namespace: foodgram
 # Backend (Django)
 backend:
   image: docker.io/santino9/foodgram-backend:latest
-  imagePullPolicy: IfNotPresent
+  imagePullPolicy: Always
   replicas: 1
   resources:
     requests:
       cpu: 150m       # стабильная нагрузка ~120m
-      memory: 200Mi   # пик 190Mi
+      memory: 250Mi   # VPA Target recommendation: 250Mi
     limits:
       cpu: 600m       # пик 291m * 2 — запас на спайки
       memory: 384Mi
@@ -78,6 +78,20 @@ externalSecrets:
 # ServiceAccount для Vault Kubernetes auth
 serviceAccount:
   name: vault-auth
+
+# Horizontal Pod Autoscaler для backend
+hpa:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 5
+  # Целевая загрузка CPU 60%: достаточно далеко от лимита 600m, чтобы успеть scale up
+  targetCPUUtilizationPercentage: 60
+
+# Vertical Pod Autoscaler для backend
+# updateMode: "Off" — только рекомендации, автоматического перезапуска нет.
+# Не конфликтует с HPA, так как VPA здесь следит только за памятью.
+vpa:
+  enabled: true
 
 # Bitnami PostgreSQL subchart
 # https://github.com/bitnami/charts/tree/main/bitnami/postgresql
