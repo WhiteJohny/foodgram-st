@@ -102,7 +102,7 @@ jobs:
   # after deploying the runner (see runners/ directory).
   build-and-push:
     needs: release
-    runs-on: [self-hosted, foodgram-runner]
+    runs-on: foodgram-runner
     if: needs.release.outputs.new_release_published == 'true'
 
     steps:
