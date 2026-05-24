@@ -2,9 +2,15 @@ name: Foodgram CI/CD Pipeline
 
 on:
   push:
-    branches: [main]
+    branches: [main, helm2]
   pull_request:
-    branches: [main]
+    branches: [main, helm2]
+
+# semantic-release needs write access to create tags and GitHub Releases
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
 
 env:
   DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -60,10 +66,45 @@ jobs:
       run: |
         flake8
 
-  build-and-push:
+  # Determines the next semantic version and creates a git tag + GitHub Release.
+  # Runs only on direct pushes to main (not PRs).
+  # Commit message prefixes drive the version bump:
+  #   fix:     → patch  (1.0.0 → 1.0.1)
+  #   feat:    → minor  (1.0.0 → 1.1.0)
+  #   BREAKING CHANGE in footer → major (1.0.0 → 2.0.0)
+  release:
     needs: test-backend
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    outputs:
+      new_release_published: ${{ steps.semantic_release.outputs.new_release_published }}
+      new_release_version: ${{ steps.semantic_release.outputs.new_release_version }}
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        # Full history required by semantic-release to calculate the next version
+        fetch-depth: 0
+
+    - name: Run semantic-release
+      id: semantic_release
+      uses: cycjimmy/semantic-release-action@v4
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Builds and pushes Docker images only when semantic-release published a new version.
+  # Each image gets two tags: the exact semver and :latest.
+  #
+  # To run this job on your self-hosted ARC runner instead of GitHub-hosted machines,
+  # change `runs-on` below to:
+  #   runs-on: [self-hosted, foodgram-runner]
+  # after deploying the runner (see runners/ directory).
+  build-and-push:
+    needs: release
+    runs-on: [self-hosted, foodgram-runner]
+    if: needs.release.outputs.new_release_published == 'true'
+
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
@@ -85,6 +126,7 @@ jobs:
         push: true
         tags: |
           ${{ env.DOCKERHUB_USERNAME }}/${{ env.BACKEND_IMAGE }}:latest
+          ${{ env.DOCKERHUB_USERNAME }}/${{ env.BACKEND_IMAGE }}:${{ needs.release.outputs.new_release_version }}
 
     - name: Build and push frontend image
       uses: docker/build-push-action@v5
@@ -94,6 +136,7 @@ jobs:
         push: true
         tags: |
           ${{ env.DOCKERHUB_USERNAME }}/${{ env.FRONTEND_IMAGE }}:latest
+          ${{ env.DOCKERHUB_USERNAME }}/${{ env.FRONTEND_IMAGE }}:${{ needs.release.outputs.new_release_version }}
 
     - name: Build and push nginx image
       uses: docker/build-push-action@v5
@@ -103,3 +146,4 @@ jobs:
         push: true
         tags: |
           ${{ env.DOCKERHUB_USERNAME }}/${{ env.NGINX_IMAGE }}:latest
+          ${{ env.DOCKERHUB_USERNAME }}/${{ env.NGINX_IMAGE }}:${{ needs.release.outputs.new_release_version }}

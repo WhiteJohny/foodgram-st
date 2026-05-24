@@ -1,0 +1,32 @@
+githubConfigUrl: "https://github.com/WhiteJohny/foodgram-st"
+
+githubConfigSecret: arc-github-secret
+
+minRunners: 0
+maxRunners: 3
+
+runnerScaleSetName: "foodgram-runner"
+
+containerMode:
+  type: "dind"
+
+template:
+  spec:
+    volumes:
+      - name: work
+        emptyDir: {}
+
+    containers:
+      - name: runner
+        image: ghcr.io/actions/actions-runner:latest
+        command: ["/home/runner/run.sh"]
+        resources:
+          requests:
+            cpu: 200m
+            memory: 256Mi
+          limits:
+            cpu: 1000m
+            memory: 1Gi
+        volumeMounts:
+          - name: work
+            mountPath: /home/runner/_work
