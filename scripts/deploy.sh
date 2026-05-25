@@ -39,6 +39,8 @@ fi
 REPO="${REPO:-docker.io/${DOCKER_USER}/foodgram}"
 
 # ── Registry login & deploy ──────────────────────────────────────────────────
+echo "==> Logging in to Docker Hub..."
+echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
 werf cr login -u "$DOCKER_USER" -p "$DOCKER_PASS" registry-1.docker.io
 
 werf converge \

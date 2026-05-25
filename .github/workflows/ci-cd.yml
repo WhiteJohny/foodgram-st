@@ -170,10 +170,6 @@ jobs:
     - name: Install werf
       uses: werf/actions/install@v2
 
-    - name: werf ci-env (sets WERF_REPO, registry auth, etc.)
-      run: source $(werf ci-env github --as-file)
-      shell: bash
-
     - name: Deploy via Vault integration script
       run: bash scripts/deploy.sh production
       shell: bash
