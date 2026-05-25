@@ -3,45 +3,96 @@ kind: ClusterRole
 metadata:
   name: foodgram-runner-role
 rules:
-  # Namespace management (werf converge needs this)
+  # Namespaces (werf needs get/create at cluster level)
   - apiGroups: [""]
     resources: ["namespaces"]
     verbs: ["get", "list", "create"]
-  # Core workload resources in foodgram namespace
-  - apiGroups: ["", "apps", "batch"]
+
+  # Core workload & config resources
+  - apiGroups: [""]
     resources:
       - pods
-      - deployments
-      - replicasets
-      - statefulsets
-      - jobs
+      - pods/log
+      - pods/exec
       - services
       - endpoints
       - configmaps
       - secrets
       - serviceaccounts
       - persistentvolumeclaims
+      - persistentvolumes
+      - replicationcontrollers
+      - resourcequotas
+      - limitranges
       - events
     verbs: ["*"]
-  # Autoscalers
+
+  # Apps
+  - apiGroups: ["apps"]
+    resources:
+      - deployments
+      - replicasets
+      - statefulsets
+      - daemonsets
+    verbs: ["*"]
+
+  # Batch
+  - apiGroups: ["batch"]
+    resources:
+      - jobs
+      - cronjobs
+    verbs: ["*"]
+
+  # Autoscaling
   - apiGroups: ["autoscaling"]
     resources: ["horizontalpodautoscalers"]
     verbs: ["*"]
   - apiGroups: ["autoscaling.k8s.io"]
     resources: ["verticalpodautoscalers"]
     verbs: ["*"]
-  # Ingress
+
+  # Networking: Ingress + NetworkPolicy
   - apiGroups: ["networking.k8s.io"]
-    resources: ["ingresses", "ingressclasses"]
+    resources:
+      - ingresses
+      - ingressclasses
+      - networkpolicies
     verbs: ["*"]
+
+  # RBAC (bitnami subcharts create Roles/RoleBindings)
+  - apiGroups: ["rbac.authorization.k8s.io"]
+    resources:
+      - roles
+      - rolebindings
+      - clusterroles
+      - clusterrolebindings
+    verbs: ["get", "list", "create", "update", "patch", "delete"]
+
+  # Policy
+  - apiGroups: ["policy"]
+    resources: ["poddisruptionbudgets"]
+    verbs: ["*"]
+
+  # Storage
+  - apiGroups: ["storage.k8s.io"]
+    resources:
+      - storageclasses
+      - volumeattachments
+    verbs: ["get", "list"]
+
   # External Secrets Operator
   - apiGroups: ["external-secrets.io"]
-    resources: ["externalsecrets", "secretstores", "clustersecretstores"]
+    resources:
+      - externalsecrets
+      - secretstores
+      - clustersecretstores
     verbs: ["*"]
-  # werf service resources
-  - apiGroups: [""]
-    resources: ["resourcequotas", "limitranges"]
+
+  # werf deploy tracking
+  - apiGroups: ["apiextensions.k8s.io"]
+    resources: ["customresourcedefinitions"]
     verbs: ["get", "list"]
+
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
