@@ -1,0 +1,40 @@
+{{- if .Values.hpa.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: backend-hpa
+  namespace: {{ include "foodgram.namespace" . }}
+  labels:
+    {{- include "foodgram.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: backend
+  minReplicas: {{ .Values.hpa.minReplicas }}
+  maxReplicas: {{ .Values.hpa.maxReplicas }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.hpa.targetCPUUtilizationPercentage }}
+  behavior:
+    scaleUp:
+      # Быстрый scale-up: не ждём стабилизации, разрешаем добавить max 2 пода за 60s
+      stabilizationWindowSeconds: 0
+      policies:
+        - type: Pods
+          value: 2
+          periodSeconds: 60
+      selectPolicy: Max
+    scaleDown:
+      # Консервативный scale-down: ждём 5 минут стабилизации, убираем 1 под в 120s
+      stabilizationWindowSeconds: 300
+      policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 120
+      selectPolicy: Min
+{{- end }}

@@ -147,3 +147,31 @@ jobs:
         tags: |
           ${{ env.DOCKERHUB_USERNAME }}/${{ env.NGINX_IMAGE }}:latest
           ${{ env.DOCKERHUB_USERNAME }}/${{ env.NGINX_IMAGE }}:${{ needs.release.outputs.new_release_version }}
+
+  # Builds images with werf and deploys to Kubernetes via werf converge.
+  # Docker credentials are fetched from Vault at deploy time.
+  deploy:
+    needs: [release, build-and-push]
+    runs-on: foodgram-runner
+    if: needs.release.outputs.new_release_published == 'true'
+    env:
+      VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+      VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}
+      NAMESPACE: foodgram
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Install werf
+      uses: werf/actions/install@v2
+
+    - name: werf ci-env (sets WERF_REPO, registry auth, etc.)
+      run: source $(werf ci-env github --as-file)
+      shell: bash
+
+    - name: Deploy via Vault integration script
+      run: bash scripts/vault-deploy.sh production
+      shell: bash

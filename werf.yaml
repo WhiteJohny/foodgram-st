@@ -1,0 +1,17 @@
+configVersion: 1
+project: foodgram
+
+---
+image: backend
+context: backend
+dockerfile: Dockerfile
+
+---
+image: frontend
+context: frontend
+dockerfile: Dockerfile
+
+---
+image: nginx
+context: nginx
+dockerfile: Dockerfile

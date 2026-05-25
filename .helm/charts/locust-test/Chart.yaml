@@ -1,0 +1,6 @@
+apiVersion: v2
+name: locust-test
+description: Locust load test for Foodgram (via locust-operator)
+type: application
+version: 0.1.0
+appVersion: "1.0.0"

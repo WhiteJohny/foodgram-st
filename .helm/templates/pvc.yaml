@@ -1,0 +1,53 @@
+# ── Static files (Django collectstatic → nginx) ──────────────────────────────
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: static-pvc
+  namespace: {{ include "foodgram.namespace" . }}
+  labels:
+    {{- include "foodgram.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/resource-policy: keep
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.persistence.static.size }}
+  storageClassName: {{ .Values.persistence.static.storageClass }}
+---
+# ── Media files (загрузки пользователей → nginx) ──────────────────────────────
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: media-pvc
+  namespace: {{ include "foodgram.namespace" . }}
+  labels:
+    {{- include "foodgram.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/resource-policy: keep
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.persistence.media.size }}
+  storageClassName: {{ .Values.persistence.media.storageClass }}
+---
+# ── Frontend build (Job → nginx) ─────────────────────────────────────────────
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: frontend-build-pvc
+  namespace: {{ include "foodgram.namespace" . }}
+  labels:
+    {{- include "foodgram.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/resource-policy: keep
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.persistence.frontendBuild.size }}
+  storageClassName: {{ .Values.persistence.frontendBuild.storageClass }}

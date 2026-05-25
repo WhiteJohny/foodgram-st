@@ -1,0 +1,33 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: foodgram-ingress
+  namespace: {{ include "foodgram.namespace" . }}
+  labels:
+    {{- include "foodgram.labels" . | nindent 4 }}
+  annotations:
+    # nginx-ingress controller
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    # Увеличиваем лимит для загрузки изображений рецептов
+    nginx.ingress.kubernetes.io/proxy-body-size: "20m"
+    # Таймауты для Django
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "90"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "15"
+spec:
+  tls:
+    - hosts:
+        - {{ .Values.ingress.host }}
+      secretName: {{ .Values.ingress.tlsSecretName }}
+  rules:
+    - host: {{ .Values.ingress.host }}
+      http:
+        paths:
+          # Весь трафик идёт на nginx, который уже раздаёт фронт и проксирует /api/
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: nginx
+                port:
+                  name: http

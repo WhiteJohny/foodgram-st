@@ -1,0 +1,110 @@
+# Locust master — принимает подключения воркеров и обслуживает Web UI
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.locustTest.name }}-master
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{ .Values.locustTest.name }}
+    role: master
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Values.locustTest.name }}
+      role: master
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.locustTest.name }}
+        role: master
+    spec:
+      containers:
+        - name: locust
+          image: {{ .Values.locustTest.image }}
+          args:
+            - --master
+            - -f
+            - /locust/locustfile.py
+            - --host={{ .Values.locustTest.host }}
+          ports:
+            - name: webui
+              containerPort: 8089
+            - name: workers
+              containerPort: 5557
+          volumeMounts:
+            - name: locustfile
+              mountPath: /locust
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+      volumes:
+        - name: locustfile
+          configMap:
+            name: locustfile-config
+---
+# Сервис Web UI — имя намеренно {name}-webui для соответствия заданию
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.locustTest.name }}-webui
+  namespace: {{ .Release.Namespace }}
+spec:
+  selector:
+    app: {{ .Values.locustTest.name }}
+    role: master
+  ports:
+    - name: webui
+      port: 8089
+      targetPort: webui
+    - name: workers
+      port: 5557
+      targetPort: workers
+---
+# Locust workers — нагрузочные агенты
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.locustTest.name }}-worker
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{ .Values.locustTest.name }}
+    role: worker
+spec:
+  replicas: {{ .Values.locustTest.numWorkers }}
+  selector:
+    matchLabels:
+      app: {{ .Values.locustTest.name }}
+      role: worker
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.locustTest.name }}
+        role: worker
+    spec:
+      containers:
+        - name: locust
+          image: {{ .Values.locustTest.image }}
+          args:
+            - --worker
+            - -f
+            - /locust/locustfile.py
+            - --master-host={{ .Values.locustTest.name }}-webui
+          volumeMounts:
+            - name: locustfile
+              mountPath: /locust
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+      volumes:
+        - name: locustfile
+          configMap:
+            name: locustfile-config

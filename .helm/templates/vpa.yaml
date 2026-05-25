@@ -1,0 +1,27 @@
+{{- if .Values.vpa.enabled }}
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: backend-vpa
+  namespace: {{ include "foodgram.namespace" . }}
+  labels:
+    {{- include "foodgram.labels" . | nindent 4 }}
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: backend
+  updatePolicy:
+    # "Off" — VPA только выдаёт рекомендации, не изменяет поды автоматически.
+    # При совместном использовании с HPA по CPU обязательно использовать Off или Initial.
+    updateMode: "Off"
+  resourcePolicy:
+    containerPolicies:
+      - containerName: backend
+        controlledResources:
+          - memory
+        minAllowed:
+          memory: 128Mi
+        maxAllowed:
+          memory: 1Gi
+{{- end }}

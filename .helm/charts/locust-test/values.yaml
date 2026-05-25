@@ -1,0 +1,15 @@
+locustTest:
+  # Имя LocustTest — оператор создаст сервис {name}-webui
+  name: load-test-v2
+  image: locustio/locust:2.24.0
+  numWorkers: 2
+  # Таргет — nginx внутри кластера
+  host: "http://nginx.foodgram.svc.cluster.local"
+  # Настройки, аналогичные части 2 (ручной запуск: 10 пользователей, spawn rate 2)
+  numUsers: 10
+  spawnRate: 2
+  # headless: false — запускаем с веб-UI, не в авто-режиме
+  headless: false
+
+ingress:
+  host: locust.local

@@ -1,0 +1,16 @@
+apiVersion: v2
+name: foodgram
+description: Foodgram recipe sharing application
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+
+dependencies:
+  - name: postgresql
+    version: "15.5.38"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: postgresql.enabled
+  - name: locust-test
+    version: "0.1.0"
+    repository: "file://charts/locust-test"
+    condition: locust-test.enabled

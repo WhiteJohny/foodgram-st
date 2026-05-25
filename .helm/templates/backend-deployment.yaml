@@ -1,0 +1,110 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: {{ include "foodgram.namespace" . }}
+  labels:
+    {{- include "foodgram.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backend
+spec:
+  # Когда HPA включён — replicas не указываем вообще.
+  # HPA становится единственным владельцем spec.replicas через kube-controller-manager.
+  # Если прописать replicas здесь, helm upgrade будет конфликтовать с HPA (SSA-конфликт).
+  {{- if not .Values.hpa.enabled }}
+  replicas: {{ .Values.backend.replicas }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "foodgram.backend.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "foodgram.backend.selectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ .Values.serviceAccount.name }}
+      initContainers:
+        - name: wait-for-secret
+          image: bitnami/kubectl:latest
+          command:
+            - sh
+            - -c
+            - |
+              until kubectl get secret {{ include "foodgram.secretName" . }} -n {{ include "foodgram.namespace" . }}; do
+                echo "Waiting for secret {{ include "foodgram.secretName" . }}..."
+                sleep 5
+              done
+              echo "Secret is ready!"
+        # Ждём готовности PostgreSQL через headless-сервис.
+        # Используем *-hl (headless), а не ClusterIP: headless всегда резолвится
+        # в IP пода даже если readiness probe кратковременно не проходит —
+        # ClusterIP же убирает endpoint и даёт connection refused.
+        - name: wait-for-postgres
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              echo "Waiting for PostgreSQL at {{ .Values.backend.env.DB_HOST }}:{{ .Values.backend.env.DB_PORT }}..."
+              until nc -z {{ .Values.backend.env.DB_HOST }}-hl {{ .Values.backend.env.DB_PORT }}; do
+                echo "PostgreSQL not ready yet, retrying in 3s..."
+                sleep 3
+              done
+              echo "PostgreSQL is ready!"
+      containers:
+        - name: backend
+          image: {{ index .Values.werf.image "backend" }}
+          imagePullPolicy: {{ .Values.backend.imagePullPolicy }}
+          ports:
+            - name: gunicorn
+              containerPort: 8000
+              protocol: TCP
+          # Несекретные переменные — из values.yaml
+          env:
+            - name: DJANGO_DEBUG
+              value: {{ .Values.backend.env.DJANGO_DEBUG | quote }}
+            - name: DB_ENGINE
+              value: {{ .Values.backend.env.DB_ENGINE | quote }}
+            - name: DB_HOST
+              value: {{ .Values.backend.env.DB_HOST | quote }}
+            - name: DB_PORT
+              value: {{ .Values.backend.env.DB_PORT | quote }}
+            - name: DJANGO_ALLOWED_HOSTS
+              value: {{ .Values.backend.env.DJANGO_ALLOWED_HOSTS | quote }}
+          envFrom:
+            - secretRef:
+                name: {{ include "foodgram.secretName" . }}
+          volumeMounts:
+            - name: static
+              mountPath: /app/static
+            - name: media
+              mountPath: /app/media
+            - name: data
+              mountPath: /app/data
+          resources:
+            {{- toYaml .Values.backend.resources | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: /api/
+              port: gunicorn
+            # Даём время на старт Django даже под нагрузкой
+            initialDelaySeconds: 45
+            periodSeconds: 10
+            failureThreshold: 6
+          readinessProbe:
+            httpGet:
+              path: /api/
+              port: gunicorn
+            # Было 15s — слишком мало когда postgres занят и gunicorn медленно стартует
+            initialDelaySeconds: 30
+            periodSeconds: 5
+            # 10 попыток × 5s = 50s окно до признания пода NotReady
+            failureThreshold: 10
+      volumes:
+        - name: static
+          persistentVolumeClaim:
+            claimName: static-pvc
+        - name: media
+          persistentVolumeClaim:
+            claimName: media-pvc
+        - name: data
+          emptyDir: {}

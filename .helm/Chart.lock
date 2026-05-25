@@ -1,0 +1,9 @@
+dependencies:
+- name: postgresql
+  repository: https://charts.bitnami.com/bitnami
+  version: 15.5.38
+- name: locust-test
+  repository: file://charts/locust-test
+  version: 0.1.0
+digest: sha256:40301a4048a676b6bc4eba90c30dc625f7fbb476a82753036619f0c3f31687b0
+generated: "2026-05-25T14:00:09.1185968+03:00"
