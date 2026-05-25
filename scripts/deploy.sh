@@ -7,9 +7,8 @@ set -a
 set +a
 
 NAMESPACE="${NAMESPACE:-foodgram}"
-REPO="${REPO:-docker.io/${DOCKER_USER}/foodgram}"
 
-# ── Vault AppRole auth ───────────────────────────────────────────
+# ── Vault auth ───────────────────────────────────────────────────
 if [ -n "${VAULT_ROLE_ID:-}" ] && [ -n "${VAULT_SECRET_ID:-}" ]; then
   echo "==> Authenticating with Vault (AppRole)..."
   VAULT_TOKEN=$(curl -sf \
@@ -18,7 +17,9 @@ if [ -n "${VAULT_ROLE_ID:-}" ] && [ -n "${VAULT_SECRET_ID:-}" ]; then
     "${VAULT_ADDR}/v1/auth/approle/login" \
     | jq -r '.auth.client_token')
   export VAULT_TOKEN
+fi
 
+if [ -n "${VAULT_TOKEN:-}" ] && [ -n "${VAULT_ADDR:-}" ]; then
   echo "==> Fetching Docker credentials from Vault..."
   SECRET_JSON=$(curl -sf \
     --header "X-Vault-Token: ${VAULT_TOKEN}" \
@@ -26,6 +27,9 @@ if [ -n "${VAULT_ROLE_ID:-}" ] && [ -n "${VAULT_SECRET_ID:-}" ]; then
   DOCKER_USER=$(echo "${SECRET_JSON}" | jq -r '.data.data.DOCKER_USERNAME')
   DOCKER_PASS=$(echo "${SECRET_JSON}" | jq -r '.data.data.DOCKER_TOKEN')
 fi
+
+# Set after Vault may have populated DOCKER_USER
+REPO="${REPO:-docker.io/${DOCKER_USER}/foodgram}"
 
 # ── Namespace ────────────────────────────────────────────────────────────────
 kubectl create namespace "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
