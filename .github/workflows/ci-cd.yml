@@ -164,6 +164,9 @@ jobs:
       with:
         fetch-depth: 0
 
+    - name: Install kubectl
+      uses: azure/setup-kubectl@v4
+
     - name: Install werf
       uses: werf/actions/install@v2
 
