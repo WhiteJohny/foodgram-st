@@ -28,7 +28,14 @@ if [ -n "${VAULT_TOKEN:-}" ] && [ -n "${VAULT_ADDR:-}" ]; then
   DOCKER_PASS=$(echo "${SECRET_JSON}" | jq -r '.data.data.DOCKER_TOKEN')
 fi
 
-# Set after Vault may have populated DOCKER_USER
+# Validate credentials are set (from .env or Vault)
+DOCKER_USER="${DOCKER_USER:-}"
+DOCKER_PASS="${DOCKER_PASS:-}"
+if [ -z "$DOCKER_USER" ] || [ -z "$DOCKER_PASS" ]; then
+  echo "ERROR: DOCKER_USER/DOCKER_PASS not set. Provide via .env or Vault secrets." >&2
+  exit 1
+fi
+
 REPO="${REPO:-docker.io/${DOCKER_USER}/foodgram}"
 
 # ── Namespace ────────────────────────────────────────────────────────────────
