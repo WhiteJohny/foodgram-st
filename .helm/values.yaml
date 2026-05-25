@@ -15,7 +15,7 @@ backend:
   env:
     DJANGO_DEBUG: "False"
     DB_ENGINE: django.db.backends.postgresql
-    DB_HOST: foodgram-postgresql
+    DB_HOST: foodgram-production-postgresql
     DB_PORT: "5432"
     DJANGO_ALLOWED_HOSTS: "*"
 
