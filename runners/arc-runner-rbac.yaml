@@ -1,0 +1,57 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: foodgram-runner-role
+rules:
+  # Namespace management (werf converge needs this)
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    verbs: ["get", "list", "create"]
+  # Core workload resources in foodgram namespace
+  - apiGroups: ["", "apps", "batch"]
+    resources:
+      - pods
+      - deployments
+      - replicasets
+      - statefulsets
+      - jobs
+      - services
+      - endpoints
+      - configmaps
+      - secrets
+      - serviceaccounts
+      - persistentvolumeclaims
+      - events
+    verbs: ["*"]
+  # Autoscalers
+  - apiGroups: ["autoscaling"]
+    resources: ["horizontalpodautoscalers"]
+    verbs: ["*"]
+  - apiGroups: ["autoscaling.k8s.io"]
+    resources: ["verticalpodautoscalers"]
+    verbs: ["*"]
+  # Ingress
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["ingresses", "ingressclasses"]
+    verbs: ["*"]
+  # External Secrets Operator
+  - apiGroups: ["external-secrets.io"]
+    resources: ["externalsecrets", "secretstores", "clustersecretstores"]
+    verbs: ["*"]
+  # werf service resources
+  - apiGroups: [""]
+    resources: ["resourcequotas", "limitranges"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: foodgram-runner-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: foodgram-runner-role
+subjects:
+  - kind: ServiceAccount
+    name: foodgram-runner-gha-rs-no-permission
+    namespace: arc-runners

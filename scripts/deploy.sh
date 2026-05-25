@@ -38,9 +38,6 @@ fi
 
 REPO="${REPO:-docker.io/${DOCKER_USER}/foodgram}"
 
-# ── Namespace ────────────────────────────────────────────────────────────────
-kubectl create namespace "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
-
 # ── Registry login & deploy ──────────────────────────────────────────────────
 werf cr login -u "$DOCKER_USER" -p "$DOCKER_PASS" registry-1.docker.io
 
