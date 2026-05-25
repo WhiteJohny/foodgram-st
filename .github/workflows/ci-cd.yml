@@ -173,5 +173,5 @@ jobs:
       shell: bash
 
     - name: Deploy via Vault integration script
-      run: bash scripts/vault-deploy.sh production
+      run: bash scripts/deploy.sh production
       shell: bash
