@@ -1,0 +1,13 @@
+# Normalize all text files to LF in the repository.
+# Required for werf (runs in WSL/Linux) to see committed files
+# with the same line endings as the git objects.
+* text=auto eol=lf
+
+# Explicitly keep binaries unchanged
+*.tgz binary
+*.gz  binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.ico binary
+*.pdf binary
