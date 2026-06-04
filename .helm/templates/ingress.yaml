@@ -14,6 +14,8 @@ metadata:
     # Таймауты для Django
     nginx.ingress.kubernetes.io/proxy-read-timeout: "90"
     nginx.ingress.kubernetes.io/proxy-connect-timeout: "15"
+    # Метрики: разрешаем Prometheus-autodiscovery для этого ingress
+    nginx.ingress.kubernetes.io/enable-access-log: "true"
 spec:
   tls:
     - hosts:
@@ -23,7 +25,6 @@ spec:
     - host: {{ .Values.ingress.host }}
       http:
         paths:
-          # Весь трафик идёт на nginx, который уже раздаёт фронт и проксирует /api/
           - path: /
             pathType: Prefix
             backend:
